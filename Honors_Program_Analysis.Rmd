@@ -1,0 +1,155 @@
+---
+title: "UCLA Honors Social Media Analysis"
+author: "Brandon Zhao and Mary Jasmine Lara"
+date: "4/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Goal: Come Up with Strategies to Increase Social Media Presence for Honors Program
+
+Summary: In order to come up with strategies to increase social media presence, we will be analyzing Instagram posts made by the Honors Program Instagram account, @uclahonors, and the engagement they recieved. We will start by summarizing the data collected from these posts, and then we will move on to analyze how the two most important aspects of an Instgram post, content and caption, affected the engagement of each post. We will be using the statistical programing language R to do this. Through this, we hope to find the ideal content types that will increase engagement for @uclahonors, and therefore increase the social media presence for the Honors Program as a whole.
+
+## Summary of Data
+
+```{r}
+honors_data <- read.csv("Honors_Data_Sheet.csv", stringsAsFactors = TRUE)
+honors_data$Date.Posted <- as.character(honors_data$Date.Posted)
+total_likes <- sum(honors_data$Number.of.Likes)
+total_comments <- sum(honors_data$Number.of.Comments)
+ratio <- round(total_likes / (total_comments * 10))
+```
+
+Data was collected from the 486 posts on @uclahonors's Instagram page. The data includes the post number, the date posted, the number of comments, the number of likes, the category of the post, and the caption of the post. Each post was put into one of six categories, listed below.
+
+```{r}
+levels(honors_data$Category)
+```
+
+Post engagement can be seen in two ways- through the number of likes each post gets and the number of comments each post gets. In order to combine these into one meaningful statistic, we will be taking the total number of total number of likes @uclahousing has so far, `r total_likes`, and dividing it by the total number of comments `r total_comments`, and then by 10, giving us the proportion `r ratio`, and using this number as how much each comment is "worth". Each post will now be given an engagement score based on their total number of likes and comments, with a like being worth 1 point and a comment being worth `r ratio` points.
+
+```{r}
+honors_data <- cbind(honors_data, "Engagement.Score" = honors_data$Number.of.Likes + (honors_data$Number.of.Comments * ratio))
+```
+
+Now, we can summarize our data.
+
+```{r}
+## Graph of Total Frequency of Each Category
+barplot.default(table(honors_data$Category),
+                main = "Total Frequency of Each Category",
+                las = 2, col = 5:10, ylim = c(0, 140), xlab = "Categories")
+table(honors_data$Category)
+
+## Relative Frequency of each Category
+barplot.default(table(honors_data$Category) / sum(table(honors_data$Category)),
+                main = "Relative Frequency of each Category",
+                las = 2, col = 5:10, ylim = c(0, .3), xlab = "Categories")
+table(honors_data$Category) / sum(table(honors_data$Category))
+
+## Graph of Total Engagement Score per Category
+score_per_cat <- factor(levels = c("Honors Events", "Honors Updates", "Inspirational", "Opportunities", "People", "UCLA Updates"))
+for (i in seq_along(honors_data$Category)) {
+  for (j in seq_len(honors_data$Engagement.Score[i])) {
+    score_per_cat <- c(score_per_cat, as.character(honors_data$Category[i]))
+  }
+}
+barplot(table(score_per_cat),
+        main = "Total Engagement Score per Category",
+        las = 2, col = 5:10, ylim = c(0, 3000), xlab = "Categories" )
+table(score_per_cat)
+
+## Graph of Posts per Year
+years <- factor(levels = c("2015", "2016", "2017", "2018", "2019"))
+for (i in seq_along(honors_data$Date.Posted)) {
+  years[i] <- substr(honors_data$Date.Posted[i], nchar(honors_data$Date.Posted[i]) - 3, nchar(honors_data$Date.Posted[i]))
+}
+barplot(table(years), main = "Posts per Year", col = 10:15, ylim = c(0, 200), xlab = "Years" )
+table(years)
+
+## Graph of Total Engagement Score per Year
+score_per_year <- factor(levels = c("2015", "2016", "2017", "2018", "2019"))
+for (i in seq_along(years)) {
+  for (j in seq_len(honors_data$Engagement.Score[i])) {
+    score_per_year <- c(score_per_year, as.character(years[i]))
+  }
+}
+barplot(table(score_per_year), main = "Total Engagement Score per Year",
+        col = 10:15, ylim = c(0, 5000), xlab = "Years" )
+table(score_per_year)
+
+## Graph ofAverage Engagement Score per Year
+barplot(table(score_per_year) / table(years),
+        main = "Average Engagement Score per Year",
+        col = 10:15, ylim = c(0, 50), xlab = "Years")
+table(score_per_year) / table(years)
+
+## Graph of Frequency of Each Category per Year
+cat_freq_year <- with(honors_data, table(Category, years)) /
+                      rbind(table(years), table(years), table(years), table(years), table(years), table(years))
+barplot(cat_freq_year, main = "Frequency of Each Category per Year",
+        col = 5:10, ylim = c(0,1), xlab = "Years", beside = TRUE)
+legend("topleft", c("Honors Events", "Honors Updates", "Inpsirational", "Opportunities", "People", "UCLA Updates"), fill = 5:10)
+cat_freq_year
+```
+
+Analysis: 
+Based on these graphs, we can see that Inspirational Posts and Honors Upates have accounted for the vast majority of posts in the past. People, Honors Events, and UCLA Updates Posts follow those in frequency, and Opportunities posts make up the least percentage of posts. While Honors Updates has taken up the majority of posts, Inspirational posts have garnered more post engagement in total, and People and Honors Events posts have garnered almost the same amount of posts as Honors Updates posts despite making up a significantly smaller proportion of total posts.
+
+While the number of posts made yearly and the total post engagement obtained peaked in 2017, the average engagement per post has increased postively from 2015 through 2019, despite the relatively few amount of posts made in 2019. Over time, Honors Events posts have come to make up a larger and larger percentage of posts made, while UCLA Updates posts have come to make up a smaller percentage. Posts of other categories have made up a relatively consistent percentage of posts made per year. This will be important to take into consideration when analyzing which category of posts is receiving the most likes. Honors Events posts will likely naturally have a higher median engagement simply because they were posted at a higher frequency in later years when the average post engagemnet was higher, while UCLA Updates posts will likely naturally have lower median engagement simply because they were posted at a lower frequency in later years when average post engagement was higher.
+
+## Content vs Post Engagement
+
+The content of each post was categorized into one of six categories: `r levels(honors_data$Category)`. The median post engagement by category is as follows
+
+```{r}
+honors_events <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Honors Events") {
+    honors_events <- c(honors_events, honors_data$Engagement.Score[i])
+  }
+}
+honors_updates <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Honors Updates") {
+    honors_updates <- c(honors_updates, honors_data$Engagement.Score[i])
+  }
+}
+UCLA_updates <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "UCLA Updates") {
+    UCLA_updates <- c(UCLA_updates, honors_data$Engagement.Score[i])
+  }
+}
+Opportunities <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Opportunities") {
+    Opportunities <- c(Opportunities, honors_data$Engagement.Score[i])
+  }
+}
+People <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "People") {
+    People <- c(People, honors_data$Engagement.Score[i])
+  }
+}
+Inspirational <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Inspirational") {
+    Inspirational <- c(Inspirational, honors_data$Engagement.Score[i])
+  }
+}
+```
+
+Honors Events | Honors Updates | UCLA Updates | Opportunities | People | Inspirational
+-:|-:|-:|-:|-:|-:|-:
+`r median(honors_events)` | `r median(honors_updates)` | `r median(UCLA_updates)` | `r median(Opportunities)` | `r median(People)` | `r median(Inspirational)`
+
+## Summary of Findings
+
+From this data, we can see that posts of the categories Inspirational, Honors Events, and People have a signifcantly higher median post engagement than posts of the categories UCLA Updates, Honors Updates, and Opportunities. However, it is important to keep in mind that Honors Events posts increased in frequency in later years, when average post engagement was higher in general, and UCLA Updates posts decreased in frequency in later years, when average post engagement was higher in general. From this data, it can be recommended that @uclahonors should increase the number of Inspirational, Honors Events, and People posts and decrease their number of UCLA Updates, Honors Updates, and Opportunities posts in order to increase their engagement and their overall social media presence.

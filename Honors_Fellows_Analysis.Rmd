@@ -1,0 +1,140 @@
+---
+title: "Honors Fellows Social Media Analysis"
+author: "Brandon Zhao and Mary Jasmine Lara"
+date: "4/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Goal: Come Up with Strategies to Increase Social Media Presence for Honors Fellows
+
+Summary: In order to come up with strategies to increase social media presence, we will be analyzing Instagram posts made by the Honors Fellows Instagram account, @honorsfellowsucla, and the engagement they recieved. We will start by summarizing the data collected from these posts, and then we will move on to analyze how the content affected the engagement of each post. We will be using the statistical programing language R to do this. Through this, we hope to find the ideal content types that will increase engagement for @honorsfellowsucla, and therefore increase the social media presence for Honors Fellows as a whole.
+
+## Summary of Data
+
+```{r}
+honors_data <- read.csv("Honors_Data.csv", stringsAsFactors = TRUE)
+honors_data$Date.Posted <- as.character(honors_data$Date.Posted)
+total_likes <- sum(honors_data$Number.of.Likes)
+total_comments <- sum(honors_data$Number.of.Comments)
+ratio <- round(total_likes / (total_comments * 10))
+honors_data
+```
+
+Data was collected from the 19 posts on @uclahousing's Instagram page. The data includes the post number, the date posted, the number of comments, the number of likes, and the category of the post. Each post was put into one of three categories, listed below.
+
+```{r}
+levels(honors_data$Category)
+```
+
+Post engagement can be seen in two ways- through the number of likes each post gets and the number of comments each post gets. In order to combine these into one meaningful statistic, we will be taking the total number of total number of likes @uclahousing has so far, `r total_likes`, and dividing it by the total number of comments `r total_comments`, and then by 10, giving us the proportion `r ratio`, and using this number as how much each comment is "worth". Each post will now be given an engagement score based on their total number of likes and comments, with a like being worth 1 point and a comment being worth `r ratio` points.
+
+```{r}
+honors_data <- cbind(honors_data, "Engagement.Score" = honors_data$Number.of.Likes + (honors_data$Number.of.Comments * ratio))
+```
+
+Now, we can summarize our data.
+
+```{r}
+## Graph of Total Frequency of Each Category
+barplot.default(table(honors_data$Category),
+                main = "Total Frequency of Each Category",
+                col = 5:10, ylim = c(0, 10), xlab = "Categories")
+table(honors_data$Category)
+
+## Relative Frequency of each Category
+barplot.default(table(honors_data$Category) / sum(table(honors_data$Category)),
+                main = "Relative Frequency of each Category",
+                col = 5:10, ylim = c(0, .4), xlab = "Categories")
+table(honors_data$Category) / sum(table(honors_data$Category))
+
+## Graph of Total Engagement Score per Category
+score_per_cat <- factor(levels = c("Announcements", "Events", "People"))
+for (i in seq_along(honors_data$Category)) {
+  for (j in seq_len(honors_data$Engagement.Score[i])) {
+    score_per_cat <- c(score_per_cat, as.character(honors_data$Category[i]))
+  }
+}
+barplot(table(score_per_cat),
+        main = "Total Engagement Score per Category",
+        col = 5:10, ylim = c(0, 300), xlab = "Categories" )
+table(score_per_cat)
+
+## Graph of Posts per Year
+years <- factor(levels = c("2018", "2019", "2020"))
+for (i in seq_along(honors_data$Date.Posted)) {
+  years[i] <- substr(honors_data$Date.Posted[i], nchar(honors_data$Date.Posted[i]) - 3, nchar(honors_data$Date.Posted[i]))
+}
+barplot(table(years), main = "Posts per Year", col = 10:15, ylim = c(0, 20), xlab = "Years" )
+table(years)
+
+## Graph of Total Engagement Score per Year
+score_per_year <- factor(levels = c("2018", "2019", "2020"))
+for (i in seq_along(years)) {
+  for (j in seq_len(honors_data$Engagement.Score[i])) {
+    score_per_year <- c(score_per_year, as.character(years[i]))
+  }
+}
+barplot(table(score_per_year), main = "Total Engagement Score per Year",
+        col = 10:15, ylim = c(0, 500), xlab = "Years" )
+table(score_per_year)
+
+## Graph of Average Engagement Score per Year
+barplot(table(score_per_year) / table(years),
+        main = "Average Engagement Score per Year",
+        col = 10:15, ylim = c(0, 50), xlab = "Years")
+table(score_per_year) / table(years)
+table(years)
+
+## Graph of Frequency of Each Category per Year
+cat_freq_year <- with(honors_data, table(Category, years)) /
+                      rbind(table(years), table(years), table(years))
+barplot(cat_freq_year, main = "Frequency of Each Category per Year",
+        col = 5:7, ylim = c(0,1), xlab = "Years", beside = TRUE)
+legend("topleft", c("Announcements", "Events", "People"), fill = 5:10)
+cat_freq_year
+```
+
+Analysis: 
+Based on these graphs, we can see that Announcements, Events, and People posts have each accounted for approximately one third of all posts made on the @honorsfellowsucla Instagram account. Although each category makes up approximately the same proportion of total posts made, the total engagement received from Announcements posts have received approximately half that of those received by Events and People posts.
+
+The @honorsfellowsucla account as only been active from 2018 to 2020, during which the number of posts per year, total engagement per year, and average engagement per year fell over time. This coincided with a decrease in posts made under the Events and People categories and an increase in posts made under the Announcements category.
+
+## Content vs Post Engagement
+
+The content of each post was categorized into one of three categories: `r levels(honors_data$Category)`. The median post engagement by category is as follows
+
+```{r}
+events <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Events") {
+    events <- c(events, honors_data$Engagement.Score[i])
+  }
+}
+announcements <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "Announcements") {
+    announcements <- c(announcements, honors_data$Engagement.Score[i])
+  }
+}
+
+people <- numeric(0)
+for (i in seq_along(honors_data$Category)) {
+  if (honors_data$Category[i] == "People") {
+    people <- c(people, honors_data$Engagement.Score[i])
+  }
+}
+```
+
+Announcements | Events | People
+-:|-:|-:|-:|-:|-:|-:
+`r median(announcements)` | `r median(events)` | `r median(people)`
+
+## Summary of Findings
+
+From this data, we can see that posts of the Events and People categories have a signifcantly higher median post engagement than posts made in the announcements category. Because of this, it can be recommended that @honorsfellowsucla should increase the number of Events and People posts, which include posts such as photographs of people at events, interviews with honors fellows, etc, and decrease the number of Announcements posts, which include posts such as flyers, invitations for groups to join, etc. in order to increase their engagement and overall social media presence
